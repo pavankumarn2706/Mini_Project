@@ -7,10 +7,21 @@ import pickle
 from sklearn.externals import joblib
 import sys
 import argparse
+from flask import Flask
+from flask import render_template
+import jyserver.Flask as jsf
 
-def get_entropy(data):
-    if len(data) == 0:
-        return 0.0
+@app.route('/')
+def home():
+    return render_template('index.html')
+    if __name__ == '__main__':
+        app.run(debug=True)
+@app.route('/')
+def add_url_rule():
+    @app.route('/uploader', methods=['GET', 'POST'])
+    def get_entropy(data):
+        if len(data) == 0:
+            return 0.0
     occurences = array.array('L', [0]*256)
     for x in data:
         occurences[x if isinstance(x, int) else ord(x)] += 1
@@ -65,7 +76,6 @@ def get_version_info(pe):
     return res
 
 def extract_infos(fpath):
-    res = {}
     pe = pefile.PE(fpath)
     res['Machine'] = pe.FILE_HEADER.Machine
     res['SizeOfOptionalHeader'] = pe.FILE_HEADER.SizeOfOptionalHeader
@@ -168,21 +178,20 @@ def extract_infos(fpath):
         res['VersionInformationSize'] = len(version_infos.keys())
     except AttributeError:
         res['VersionInformationSize'] = 0
-    return res
+    
+    @app.route('/uploader', methods=['GET', 'POST'])
+    def upload_file():
+        if request.method == 'POST':
+            f = request.files['file']
+            f.save(secure_filename(f.filename))
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Detect malicious files')
-    parser.add_argument('FILE', help='File to be tested')
-    args = parser.parse_args()
     # Load classifier
-    clf = joblib.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),'classifier/classifier.pkl'
-    ))
-    features = pickle.loads(open(os.path.join(os.path.dirname(os.path.realpath(__file__)),'classifier/features.pkl'),'r').read()
-    )
+    clf = joblib.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),'classifier/classifier.pkl'))
+    features = pickle.loads(open(os.path.join(os.path.dirname(os.path.realpath(__file__)),'classifier/features.pkl'),'r').read())
 
     data = extract_infos(args.FILE)
 
-    pe_features = map(lambda x:data[x], features)
+    pe_features = list(map(lambda x:data[x], features))
 
     res= clf.predict([pe_features])[0]
-    print('The file %s is %s' % (os.path.basename(sys.argv[1]),['malicious', 'legitimate'][res]))
+    return render_template('result.html', prediction=['legitimate', 'malicious'][res])

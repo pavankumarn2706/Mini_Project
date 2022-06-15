@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<form action="http://localhost:5000/uploader" method="post" enctype="multipart/form-data">
+    <span class="up">up</span><span class="load">load</span>
+    <input type="file" name="file" multiple="multiple" />
+  <input type="submit" value="Start Detection" name="submit">
+  <script type="text/javascript" src="{{ url_for('static', filename="js/bootstrap.min.js")}}"></script>
+</form>
+
+</body>
+</html>
